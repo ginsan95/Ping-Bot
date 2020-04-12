@@ -1,20 +1,28 @@
 import { CronJob } from 'cron';
-import * as https from 'https';
+import { createServer } from 'http';
+import * as api from './api';
+import constants from './constants';
 
-const job = new CronJob(
-    '* * * * * *',
-    function() {
-        console.log('You will see this message every second');
-    },
-    null,
-    true,
-    'America/Los_Angeles'
-);
+function fetchPingURLS() {
+    const urls = constants.pingURLS.split(';');
+    console.log(urls);
+    Promise.all(urls.map(url => api.fetchURL(url))).catch(error =>
+        console.error(error)
+    );
+}
+
+const cronTime = `*/${constants.runSecond} */${constants.runMinute} * * * *`;
+
+const job = new CronJob(cronTime, fetchPingURLS, null, false, 'Asia/Singapore');
+
+createServer({}, (req, res) => {
+    res.writeHead(200);
+    res.end('Ping Server');
+}).listen(constants.port);
 
 job.start();
 
-https.get('https://www.google.com/', { agent: false }, res => {
-    res.on('data', data => {
-        console.log(data);
-    });
-});
+console.log('Constant values are');
+console.log(constants);
+
+console.log(`Running cron job with value: ${cronTime}`);
